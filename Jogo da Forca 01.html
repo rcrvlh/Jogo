@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Forca - Solvente</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            padding: 0;
+            margin: 0;
+        }
+
+        header {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .left-side {
+            width: 50%;
+        }
+
+        .right-side {
+            width: 50%;
+            text-align: left;
+        }
+
+        .hidden-word {
+            font-size: 36px;
+            letter-spacing: 8px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .message {
+            font-size: 20px;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #dc2626;
+        }
+
+        .letters {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            justify-items: center;
+            margin: 20px 0;
+        }
+
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #1e40af;
+        }
+
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Estilo para a área das dicas */
+        .hint {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #4b5563;
+        }
+
+        /* Estilo para a forca */
+        #forcaCanvas {
+            border: 2px solid #000;
+            margin-top: 20px;
+            width: 200px;
+            height: 300px;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Jogo da Forca</h1>
+</header>
+
+<div class="container">
+    <div class="left-side">
+        <!-- Canvas para desenhar a forca -->
+        <canvas id="forcaCanvas"></canvas>
+    </div>
+    
+    <div class="right-side">
+        <div class="hidden-word" id="wordDisplay">_ _ _ _ _ _ _ _</div>
+
+        <!-- Dicas do jogo -->
+        <div class="hint" id="hintDisplay">Dica: Produto químico que limpa ou dissolve impurezas.</div>
+        
+        <div class="letters">
+            <button id="letter-A">A</button>
+            <button id="letter-B">B</button>
+            <button id="letter-C">C</button>
+            <button id="letter-D">D</button>
+            <button id="letter-E">E</button>
+            <button id="letter-F">F</button>
+            <button id="letter-G">G</button>
+            <button id="letter-H">H</button>
+            <button id="letter-I">I</button>
+            <button id="letter-J">J</button>
+            <button id="letter-K">K</button>
+            <button id="letter-L">L</button>
+            <button id="letter-M">M</button>
+            <button id="letter-N">N</button>
+            <button id="letter-O">O</button>
+            <button id="letter-P">P</button>
+            <button id="letter-Q">Q</button>
+            <button id="letter-R">R</button>
+            <button id="letter-S">S</button>
+            <button id="letter-T">T</button>
+            <button id="letter-U">U</button>
+            <button id="letter-V">V</button>
+            <button id="letter-W">W</button>
+            <button id="letter-X">X</button>
+            <button id="letter-Y">Y</button>
+            <button id="letter-Z">Z</button>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+</div>
+
+<footer>
+</footer>
+
+<script>
+    const word = "solvente";
+    let guessedLetters = [];
+    let wrongGuesses = 0;
+    const maxWrongGuesses = 6;
+    const canvas = document.getElementById("forcaCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Adicionando uma segunda dica
+    const hints = [
+        "Produto químico que limpa ou dissolve impurezas.",
+        "Usado para dissolver substâncias."
+    ];
+
+    canvas.width = 200;
+    canvas.height = 300;
+
+    // Desenhando o esqueleto da forca
+    function drawHangman() {
+        // Desenha a base da forca
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas a cada erro
+        ctx.beginPath();
+        ctx.moveTo(50, 250);
+        ctx.lineTo(150, 250);
+        ctx.moveTo(100, 250);
+        ctx.lineTo(100, 50);
+        ctx.moveTo(100, 50);
+        ctx.lineTo(150, 50);
+        ctx.moveTo(150, 50);
+        ctx.lineTo(150, 75); // Cabine
+        ctx.stroke();
+
+        // Desenhando o boneco
+        if (wrongGuesses > 0) drawHead();
+        if (wrongGuesses > 1) drawTrunk();
+        if (wrongGuesses > 2) drawLeftArm();
+        if (wrongGuesses > 3) drawRightArm();
+        if (wrongGuesses > 4) drawLeftLeg();
+        if (wrongGuesses > 5) drawRightLeg();
+    }
+
+    // Desenha a cabeça
+    function drawHead() {
+        ctx.beginPath();
+        ctx.arc(150, 100, 25, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Desenha o tronco
+    function drawTrunk() {
+        ctx.beginPath();
+        ctx.moveTo(150, 125);
+        ctx.lineTo(150, 175);
+        ctx.stroke();
+    }
+
+    // Desenha o braço esquerdo
+    function drawLeftArm() {
+        ctx.beginPath();
+        ctx.moveTo(150, 130);
+        ctx.lineTo(120, 150);
+        ctx.stroke();
+    }
+
+    // Desenha o braço direito
+    function drawRightArm() {
+        ctx.beginPath();
+        ctx.moveTo(150, 130);
+        ctx.lineTo(180, 150);
+        ctx.stroke();
+    }
+
+    // Desenha a perna esquerda
+    function drawLeftLeg() {
+        ctx.beginPath();
+        ctx.moveTo(150, 175);
+        ctx.lineTo(120, 200);
+        ctx.stroke();
+    }
+
+    // Desenha a perna direita
+    function drawRightLeg() {
+        ctx.beginPath();
+        ctx.moveTo(150, 175);
+        ctx.lineTo(180, 200);
+        ctx.stroke();
+    }
+
+    function displayWord() {
+        let display = '';
+        for (let i = 0; i < word.length; i++) {
+            if (guessedLetters.includes(word[i])) {
+                display += word[i] + ' ';
+            } else {
+                display += '_ ';
+            }
+        }
+        document.getElementById('wordDisplay').textContent = display.trim();
+    }
+
+    function updateMessage(message, color = "#dc2626") {
+        const messageElement = document.getElementById('message');
+        messageElement.textContent = message;
+        messageElement.style.color = color;
+    }
+
+    function guessLetter(letter) {
+        if (guessedLetters.includes(letter)) return;
+        guessedLetters.push(letter);
+
+        if (!word.includes(letter)) {
+            wrongGuesses++;
+            if (wrongGuesses >= maxWrongGuesses) {
+                updateMessage('Você perdeu! A palavra era: ' + word);
+                disableAllButtons();
+            } else {
+                updateMessage('Erros: ' + wrongGuesses + '/' + maxWrongGuesses);
+            }
+        } else {
+            displayWord();
+            if (word.split('').every(letter => guessedLetters.includes(letter))) {
+                updateMessage('Parabéns! Você acertou a palavra!', "#16a34a");
+                disableAllButtons();
+            }
+        }
+
+        drawHangman();
+    }
+
+    function disableAllButtons() {
+        document.querySelectorAll('button').forEach(button => button.disabled = true);
+    }
+
+    // Exibir a dica quando o jogo começar
+    document.getElementById('hintDisplay').textContent = `Dica: ${hints[0]}`;
+
+    document.querySelectorAll('button').forEach(button => {
+        button.addEventListener('click', () => {
+            guessLetter(button.textContent.toLowerCase());
+            button.disabled = true;
+        });
+    });
+
+    displayWord();
+    drawHangman();  // Desenha a forca no começo
+</script>
+
+</body>
+</html>
